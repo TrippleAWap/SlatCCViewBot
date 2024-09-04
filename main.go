@@ -11,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 func main() {
@@ -22,26 +21,31 @@ func main() {
 		log.Fatalln(err)
 	}
 	proxyList := strings.Split(strings.ReplaceAll(string(data), "\r", ""), "\n")
-	userIds := []int{59717}
+	var userId int
+	print("Enter target user id: ")
+	_, err = fmt.Scan(&userId)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	userIds := []int{userId}
 	batching := 100
-	var wg sync.WaitGroup
+
+	fmt.Printf("Loaded %v proxies\nview botting %v account(s)\n", len(proxyList), len(userIds))
 	for i := 0; i < int(math.Ceil(float64(len(proxyList)/batching))); i++ {
-		wg.Add(1)
 		go func(proxyList []string) {
-			defer wg.Done()
-			for _, userId := range userIds {
+			for _, userIdV := range userIds {
 				for _, proxy := range proxyList {
-					go func(userId int, proxy string) {
-						_ = ViewProfile(userId, proxy)
-					}(userId, proxy)
+					go func(proxy string) {
+						_ = ViewProfile(userIdV, proxy)
+					}(proxy)
 				}
 			}
 		}(proxyList[i*batching:])
 	}
-	wg.Wait()
-	fmt.Println("DONE")
-}
+	for {
 
+	}
+}
 func ViewProfile(userId int, proxyUrl string) error {
 	proxyURL, err := url.Parse(proxyUrl)
 	if err != nil {
@@ -67,6 +71,9 @@ func ViewProfile(userId int, proxyUrl string) error {
 	if err != nil {
 		return err
 	}
-	println(string(body))
+
+	if strings.Contains(string(body), "Successfully added view") {
+		println(string(body))
+	}
 	return nil
 }
